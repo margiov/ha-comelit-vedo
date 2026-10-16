@@ -56,11 +56,12 @@ interrogazione (polling locale).
 
 ## Limiti noti
 
-- Inserimento **totale** dell'area (no parzializzazioni P1/P2).
-- Un'area in allarme passa allo stato `triggered`; l'attributo `alarm_memory`
-  indica un allarme memorizzato (resta anche dopo il disinserimento, finché non si
-  resetta).
-- Lo stato copre le prime 30 posizioni zona.
+- L'**inserimento** da HA è solo totale (no parzializzazioni P1/P2), ma lo stato
+  riflette tutte le condizioni della centrale: `disarmed`, `arming` (tempo di
+  uscita), `armed_away`/`armed_home`/`armed_night`, `pending` (tempo di ingresso),
+  `triggered`. Gli attributi riportano `alarm_memory`, `not_ready`, `sabotage`,
+  `anomaly`, `exclusion`, `open_zone`, `output_on`.
+- Lo stato zone copre le prime 30 posizioni zona.
 - TLS cifra il trasporto ma non aggiunge autenticazione.
 
 ## Sicurezza

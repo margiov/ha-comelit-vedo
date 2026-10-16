@@ -25,14 +25,27 @@ ZONE_FLAGS = [
     (4096, "low_batt"), (8192, "superv"),
 ]
 
-# stato aree (frame 6029), 4 byte/area.
-#   byte0: bit 0x02 = inserita, bit 0x20 = in allarme (osservato 0x22 = inserita+allarme)
-#   byte1: bit 0x01 = non pronta (zona aperta), bit 0x02 = allarme in memoria
-#          (persiste a impianto disinserito finche' non viene resettato)
-AREA_B0_ARMED = 0x02
-AREA_B0_ALARM = 0x20
-AREA_B1_NOT_READY = 0x01
-AREA_B1_ALARM_MEM = 0x02
+# stato aree (frame 6029): record 4 byte = 28 bit, uno per flag, nell'ordine
+# dell'enum AreaStatus dell'app (com.comelitgroup.nimbus.dpcp.realtime.AreaStatus).
+# (byte_index, bitmask, nome)
+AREA_BITS = [
+    # byte 0
+    (0, 0x01, "disarmed"), (0, 0x02, "armed_total"), (0, 0x04, "armed_p1"),
+    (0, 0x08, "armed_p2"), (0, 0x10, "not_ready_arming"), (0, 0x20, "in_alarm"),
+    (0, 0x40, "sabotage"), (0, 0x80, "anomaly"),
+    # byte 1
+    (1, 0x01, "alarm_memory"), (1, 0x02, "not_ready_total"), (1, 0x04, "not_ready_p1"),
+    (1, 0x08, "not_ready_p2"), (1, 0x10, "alarm_in_progress"), (1, 0x20, "exclusion"),
+    (1, 0x40, "entry_delay"), (1, 0x80, "exit_delay"),
+    # byte 2
+    (2, 0x01, "arming_failed"), (2, 0x02, "arming_completed"), (2, 0x04, "disarming_completed"),
+    (2, 0x08, "no_burglar_p1"), (2, 0x10, "no_burglar_p2"), (2, 0x20, "no_burglar_area"),
+    (2, 0x40, "open_zone"), (2, 0x80, "output_on"),
+    # byte 3
+    (3, 0x01, "alarm_p1"), (3, 0x02, "alarm_p2"), (3, 0x04, "memory_p1"), (3, 0x08, "memory_p2"),
+]
+# flag "sempre attivi" quando l'area non ha zone P1/P2: solo rumore di fondo
+_AREA_NOISE = {"no_burglar_p1", "no_burglar_p2", "no_burglar_area"}
 
 
 def crc16(data: bytes) -> int:
@@ -252,15 +265,41 @@ class Vedo:
     def _decode_area(rec):
         if not rec or rec[0] == 0x00:
             return None
-        b0, b1 = rec[0], rec[1]
-        armed = bool(b0 & AREA_B0_ARMED)
-        alarm = bool(b0 & AREA_B0_ALARM)
+        active = {name for bi, bit, name in AREA_BITS if rec[bi] & bit}
+        armed = bool(active & {"armed_total", "armed_p1", "armed_p2"})
+        in_alarm = "in_alarm" in active
+        exit_delay = "exit_delay" in active      # tempo di uscita = inserimento in corso
+        entry_delay = "entry_delay" in active     # tempo di ingresso = pre-allarme
+        if in_alarm:
+            state = "triggered"
+        elif exit_delay:
+            state = "arming"
+        elif entry_delay:
+            state = "pending"
+        elif "armed_total" in active:
+            state = "armed_away"
+        elif "armed_p1" in active:
+            state = "armed_home"
+        elif "armed_p2" in active:
+            state = "armed_night"
+        elif "disarmed" in active:
+            state = "disarmed"
+        else:
+            state = "unknown"
         return {
+            "state": state,
             "armed": armed,
-            "alarm": alarm,
-            "not_ready": bool(b1 & AREA_B1_NOT_READY),
-            "alarm_memory": bool(b1 & AREA_B1_ALARM_MEM),
-            "state": "triggered" if alarm else "armed" if armed else "disarmed",
+            "alarm": in_alarm,
+            "arming": exit_delay,
+            "pending": entry_delay,
+            "alarm_memory": "alarm_memory" in active,
+            "not_ready": bool(active & {"not_ready_arming", "not_ready_total"}),
+            "sabotage": "sabotage" in active,
+            "anomaly": "anomaly" in active,
+            "exclusion": "exclusion" in active,
+            "open_zone": "open_zone" in active,
+            "output_on": "output_on" in active,
+            "flags": sorted(active - _AREA_NOISE),
             "raw": rec.hex(),
         }
 

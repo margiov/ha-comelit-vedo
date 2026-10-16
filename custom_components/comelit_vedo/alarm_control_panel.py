@@ -47,16 +47,22 @@ class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
     def available(self) -> bool:
         return super().available and self._area is not None
 
+    _STATE_MAP = {
+        "triggered": AlarmControlPanelState.TRIGGERED,
+        "arming": AlarmControlPanelState.ARMING,
+        "pending": AlarmControlPanelState.PENDING,
+        "armed_away": AlarmControlPanelState.ARMED_AWAY,
+        "armed_home": AlarmControlPanelState.ARMED_HOME,
+        "armed_night": AlarmControlPanelState.ARMED_NIGHT,
+        "disarmed": AlarmControlPanelState.DISARMED,
+    }
+
     @property
     def alarm_state(self) -> AlarmControlPanelState | None:
         area = self._area
         if area is None:
             return None
-        if area.get("alarm"):
-            return AlarmControlPanelState.TRIGGERED
-        if area["armed"]:
-            return AlarmControlPanelState.ARMED_AWAY
-        return AlarmControlPanelState.DISARMED
+        return self._STATE_MAP.get(area["state"])
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -64,6 +70,12 @@ class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
         return {
             "not_ready": area.get("not_ready", False),
             "alarm_memory": area.get("alarm_memory", False),
+            "sabotage": area.get("sabotage", False),
+            "anomaly": area.get("anomaly", False),
+            "exclusion": area.get("exclusion", False),
+            "open_zone": area.get("open_zone", False),
+            "output_on": area.get("output_on", False),
+            "flags": area.get("flags", []),
             "raw": area.get("raw"),
         }
 
