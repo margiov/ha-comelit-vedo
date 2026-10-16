@@ -52,6 +52,8 @@ class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
         area = self._area
         if area is None:
             return None
+        if area.get("alarm"):
+            return AlarmControlPanelState.TRIGGERED
         if area["armed"]:
             return AlarmControlPanelState.ARMED_AWAY
         return AlarmControlPanelState.DISARMED
@@ -59,7 +61,11 @@ class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
     @property
     def extra_state_attributes(self) -> dict:
         area = self._area or {}
-        return {"not_ready": area.get("not_ready", False), "raw": area.get("raw")}
+        return {
+            "not_ready": area.get("not_ready", False),
+            "alarm_memory": area.get("alarm_memory", False),
+            "raw": area.get("raw"),
+        }
 
     async def async_alarm_arm_away(self, code: str | None = None) -> None:
         await self.coordinator.async_arm(self._idx)

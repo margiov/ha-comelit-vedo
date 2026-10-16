@@ -25,9 +25,14 @@ ZONE_FLAGS = [
     (4096, "low_batt"), (8192, "superv"),
 ]
 
-# stato aree (frame 6029), 4 byte/area: byte0 stato, byte1 flag
-AREA_STATE = {0x00: "non presente", 0x01: "disarmed", 0x02: "armed"}
-AREA_FLAGS = [(0x01, "not_ready")]
+# stato aree (frame 6029), 4 byte/area.
+#   byte0: bit 0x02 = inserita, bit 0x20 = in allarme (osservato 0x22 = inserita+allarme)
+#   byte1: bit 0x01 = non pronta (zona aperta), bit 0x02 = allarme in memoria
+#          (persiste a impianto disinserito finche' non viene resettato)
+AREA_B0_ARMED = 0x02
+AREA_B0_ALARM = 0x20
+AREA_B1_NOT_READY = 0x01
+AREA_B1_ALARM_MEM = 0x02
 
 
 def crc16(data: bytes) -> int:
@@ -247,11 +252,15 @@ class Vedo:
     def _decode_area(rec):
         if not rec or rec[0] == 0x00:
             return None
-        flags = [name for bit, name in AREA_FLAGS if rec[1] & bit]
+        b0, b1 = rec[0], rec[1]
+        armed = bool(b0 & AREA_B0_ARMED)
+        alarm = bool(b0 & AREA_B0_ALARM)
         return {
-            "state": AREA_STATE.get(rec[0], f"unknown:{rec[0]:#04x}"),
-            "armed": rec[0] == 0x02,
-            "not_ready": "not_ready" in flags,
+            "armed": armed,
+            "alarm": alarm,
+            "not_ready": bool(b1 & AREA_B1_NOT_READY),
+            "alarm_memory": bool(b1 & AREA_B1_ALARM_MEM),
+            "state": "triggered" if alarm else "armed" if armed else "disarmed",
             "raw": rec.hex(),
         }
 

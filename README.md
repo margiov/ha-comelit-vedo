@@ -57,9 +57,9 @@ interrogazione (polling locale).
 ## Limiti noti
 
 - Inserimento **totale** dell'area (no parzializzazioni P1/P2).
-- Lo stato "in allarme" non è ancora decodificato: le aree risultano inserite o
-  disinserite; per un allarme in corso si vedono i flag di zona (`alarm`) e il log
-  della centrale.
+- Un'area in allarme passa allo stato `triggered`; l'attributo `alarm_memory`
+  indica un allarme memorizzato (resta anche dopo il disinserimento, finché non si
+  resetta).
 - Lo stato copre le prime 30 posizioni zona.
 - TLS cifra il trasporto ma non aggiunge autenticazione.
 
