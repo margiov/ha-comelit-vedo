@@ -24,9 +24,13 @@ async def async_setup_entry(
 
 
 class VedoZoneSensor(VedoEntity, BinarySensorEntity):
-    """Stato di apertura di una zona, con i flag come attributi."""
+    """Stato di una zona (attiva / a riposo), con i flag come attributi.
 
-    _attr_device_class = BinarySensorDeviceClass.OPENING
+    Il protocollo non dice se una zona e' un rilevatore di movimento o un contatto:
+    di default e' "motion" (il caso tipico delle zone VEDO); per i contatti porta o
+    finestra si cambia da HA (impostazioni dell'entita' -> "Mostra come")."""
+
+    _attr_device_class = BinarySensorDeviceClass.MOTION
 
     def __init__(self, coordinator: VedoCoordinator, idx: int) -> None:
         super().__init__(coordinator)

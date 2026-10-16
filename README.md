@@ -20,8 +20,10 @@ Il protocollo nativo usa invece un **vettore esplicito con un valore per ogni ar
 - Un **pannello d'allarme** (`alarm_control_panel`) per ogni area presente:
   inserimento totale (`arm_away`), parziale P1 (`arm_home`) e P2 (`arm_night`), e
   disinserimento. Non richiede codice.
-- Un **sensore binario** (`binary_sensor`) per ogni zona presente: aperta / a riposo,
-  con i flag (esclusa, guasto, manomissione, batteria…) come attributi.
+- Un **sensore binario** (`binary_sensor`) per ogni zona presente: attiva / a riposo,
+  con i flag (esclusa, guasto, manomissione, batteria…) come attributi. Il tipo
+  predefinito è *movimento*; per i contatti porta/finestra cambialo da HA
+  (impostazioni dell'entità → "Mostra come").
 - Nomi di aree e zone letti automaticamente dalla centrale.
 - Configurazione da interfaccia (config flow).
 
