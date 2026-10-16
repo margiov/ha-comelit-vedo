@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Comelit VEDO (native)",
+        "description": "Direct connection to the VEDO panel over its native protocol.",
+        "data": {
+          "host": "Panel IP address",
+          "port": "Port (10022 TLS, 10012 plaintext)",
+          "unit_id": "unit_id (hex, required only for arm/disarm)",
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the panel: check address and port."
+    },
+    "abort": {
+      "already_configured": "This panel is already configured."
+    }
+  }
+}

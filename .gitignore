@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+# configurazione/dati di impianti reali: non committare mai
+vedo.json
+*.pcap
+*.pcapng

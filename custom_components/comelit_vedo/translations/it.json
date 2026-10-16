@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Comelit VEDO (nativo)",
+        "description": "Collegamento diretto alla centrale VEDO tramite il protocollo nativo.",
+        "data": {
+          "host": "Indirizzo IP della centrale",
+          "port": "Porta (10022 TLS, 10012 in chiaro)",
+          "unit_id": "unit_id (hex, richiesto solo per arma/disarma)",
+          "scan_interval": "Intervallo di aggiornamento (secondi)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi alla centrale: controlla indirizzo e porta."
+    },
+    "abort": {
+      "already_configured": "Questa centrale è già configurata."
+    }
+  }
+}

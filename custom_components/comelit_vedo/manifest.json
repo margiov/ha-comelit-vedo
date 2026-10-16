@@ -1,0 +1,12 @@
+{
+  "domain": "comelit_vedo",
+  "name": "Comelit VEDO (nativo)",
+  "codeowners": ["@margiov"],
+  "config_flow": true,
+  "documentation": "https://github.com/margiov/ha-comelit-vedo",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/margiov/ha-comelit-vedo/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
