@@ -13,6 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .coordinator import VedoCoordinator
 from .entity import VedoEntity
+from .protocol import ACT_ARM, ACT_P1, ACT_P2
 
 
 async def async_setup_entry(
@@ -27,7 +28,11 @@ async def async_setup_entry(
 class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
     """Un'area della centrale come pannello d'allarme (arma totale / disarma)."""
 
-    _attr_supported_features = AlarmControlPanelEntityFeature.ARM_AWAY
+    _attr_supported_features = (
+        AlarmControlPanelEntityFeature.ARM_AWAY
+        | AlarmControlPanelEntityFeature.ARM_HOME
+        | AlarmControlPanelEntityFeature.ARM_NIGHT
+    )
     _attr_code_arm_required = False
 
     def __init__(self, coordinator: VedoCoordinator, idx: int) -> None:
@@ -80,7 +85,13 @@ class VedoAreaPanel(VedoEntity, AlarmControlPanelEntity):
         }
 
     async def async_alarm_arm_away(self, code: str | None = None) -> None:
-        await self.coordinator.async_arm(self._idx)
+        await self.coordinator.async_arm(self._idx, ACT_ARM)       # inserimento totale
+
+    async def async_alarm_arm_home(self, code: str | None = None) -> None:
+        await self.coordinator.async_arm(self._idx, ACT_P1)        # parziale P1
+
+    async def async_alarm_arm_night(self, code: str | None = None) -> None:
+        await self.coordinator.async_arm(self._idx, ACT_P2)        # parziale P2
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
         await self.coordinator.async_disarm(self._idx)

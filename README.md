@@ -18,7 +18,8 @@ Il protocollo nativo usa invece un **vettore esplicito con un valore per ogni ar
 ## Cosa fornisce
 
 - Un **pannello d'allarme** (`alarm_control_panel`) per ogni area presente:
-  inserimento totale (`arm_away`) e disinserimento. Non richiede codice.
+  inserimento totale (`arm_away`), parziale P1 (`arm_home`) e P2 (`arm_night`), e
+  disinserimento. Non richiede codice.
 - Un **sensore binario** (`binary_sensor`) per ogni zona presente: aperta / a riposo,
   con i flag (esclusa, guasto, manomissione, batteria…) come attributi.
 - Nomi di aree e zone letti automaticamente dalla centrale.
@@ -56,9 +57,12 @@ interrogazione (polling locale).
 
 ## Limiti noti
 
-- L'**inserimento** da HA è solo totale (no parzializzazioni P1/P2), ma lo stato
-  riflette tutte le condizioni della centrale: `disarmed`, `arming` (tempo di
-  uscita), `armed_away`/`armed_home`/`armed_night`, `pending` (tempo di ingresso),
+- Inserimenti supportati: **totale** (`arm_away`), **parziale P1** (`arm_home`) e
+  **parziale P2** (`arm_night`); il disinserimento è totale. I codici parziali
+  derivano dall'enum `AreaActivation` dell'app (totale/disinserimento verificati su
+  cattura, P1/P2 non ancora verificati su campo).
+- Lo stato riflette tutte le condizioni della centrale: `disarmed`, `arming` (tempo
+  di uscita), `armed_away`/`armed_home`/`armed_night`, `pending` (tempo di ingresso),
   `triggered`. Gli attributi riportano `alarm_memory`, `not_ready`, `sabotage`,
   `anomaly`, `exclusion`, `open_zone`, `output_on`.
 - Lo stato zone copre le prime 30 posizioni zona.

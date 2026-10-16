@@ -114,8 +114,8 @@ class VedoCoordinator(DataUpdateCoordinator):
             num = self.num_areas or len(v.read_area_names(s))
             return v.area_action(s, idx, code, num)
 
-    async def async_arm(self, idx: int) -> None:
-        await self._run_action(idx, ACT_ARM, "arma")
+    async def async_arm(self, idx: int, code: int = ACT_ARM) -> None:
+        await self._run_action(idx, code, "arma")
 
     async def async_disarm(self, idx: int) -> None:
         await self._run_action(idx, ACT_DISARM, "disarma")

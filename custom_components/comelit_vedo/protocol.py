@@ -14,8 +14,9 @@ _LOGGER = logging.getLogger(__name__)
 
 MAGIC = b"\x36\x0c"
 
-# codici azione per area (vettore del comando 0x4013)
-ACT_NONE, ACT_ARM, ACT_DISARM = 0x00, 0x01, 0x05
+# codici azione per area (ordinali enum AreaActivation dell'app):
+# 0=non toccare, 1=TOT, 2=P1+P2, 3=P1, 4=P2, 5=disarma
+ACT_NONE, ACT_ARM, ACT_P12, ACT_P1, ACT_P2, ACT_DISARM = 0, 1, 2, 3, 4, 5
 
 # bitmask stato zona (enum RtSpecZoneStatus)
 ZONE_FLAGS = [
