@@ -5,8 +5,14 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.core import callback
 
 from .const import (
     CONF_SCAN_INTERVAL,
@@ -29,6 +35,11 @@ class VedoConfigFlow(ConfigFlow, domain=DOMAIN):
     """Gestisce la configurazione da interfaccia."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> "VedoOptionsFlow":
+        return VedoOptionsFlow()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -69,3 +80,43 @@ class VedoConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+
+class VedoOptionsFlow(OptionsFlow):
+    """Permette di cambiare porta, unit_id e intervallo senza riconfigurare."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        entry = self.config_entry
+        current = {**entry.data, **entry.options}
+        if user_input is not None:
+            host = entry.data[CONF_HOST]
+            port = user_input[CONF_PORT]
+            unit_id = user_input.get(CONF_UNIT_ID, "").strip()
+            try:
+                await self.hass.async_add_executor_job(_validate, host, port, unit_id)
+            except (VedoError, OSError):
+                errors["base"] = "cannot_connect"
+            else:
+                return self.async_create_entry(
+                    title="",
+                    data={
+                        CONF_PORT: port,
+                        CONF_UNIT_ID: unit_id,
+                        CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
+                    },
+                )
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_PORT, default=current.get(CONF_PORT, DEFAULT_PORT)): int,
+                vol.Optional(CONF_UNIT_ID, default=current.get(CONF_UNIT_ID, "")): str,
+                vol.Required(
+                    CONF_SCAN_INTERVAL,
+                    default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ): vol.All(int, vol.Range(min=MIN_SCAN_INTERVAL)),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

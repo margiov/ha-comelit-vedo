@@ -57,6 +57,10 @@ In alternativa, copia `custom_components/comelit_vedo/` nella cartella
 La centrale risponde solo alle richieste, quindi lo stato è aggiornato a ogni
 interrogazione (polling locale).
 
+Porta, `unit_id` e intervallo si possono cambiare in seguito da **Configura**
+(Impostazioni → Dispositivi e servizi → Comelit VEDO → Configura), senza rimuovere
+e riaggiungere l'integrazione.
+
 ## Limiti noti
 
 - Inserimenti supportati: **totale** (`arm_away`), **parziale P1** (`arm_home`) e

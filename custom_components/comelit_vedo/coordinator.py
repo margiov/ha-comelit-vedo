@@ -32,9 +32,10 @@ class VedoCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         self.entry = entry
-        self.host = entry.data["host"]
-        self.port = entry.data.get("port", DEFAULT_PORT)
-        self.unit_id = entry.data.get(CONF_UNIT_ID, "")
+        cfg = {**entry.data, **entry.options}   # le opzioni hanno la precedenza
+        self.host = cfg["host"]
+        self.port = cfg.get("port", DEFAULT_PORT)
+        self.unit_id = cfg.get(CONF_UNIT_ID, "")
         self._names_ready = False
         self.area_names: dict[int, str] = {}
         self.zone_names: dict[int, str] = {}
@@ -46,7 +47,7 @@ class VedoCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name="Comelit VEDO",
             update_interval=timedelta(
-                seconds=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                seconds=cfg.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
             ),
         )
 
