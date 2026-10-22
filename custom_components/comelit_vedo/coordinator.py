@@ -8,6 +8,7 @@ con un tentativo di riconnessione prima di segnalare l'aggiornamento come fallit
 from __future__ import annotations
 
 import logging
+import time
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -26,6 +27,15 @@ _LOGGER = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT = 5.0
 
+# Subito dopo un comando di inserimento la centrale espone gia' il bit "inserita"
+# ma non ancora il tempo di uscita, che compare un paio di secondi dopo (oppure,
+# senza tempo di uscita, arriva solo l'impulso "arming_completed"). Senza
+# correzione lo stato passa armed_away -> arming -> armed_away. Per questo tempo
+# dopo il comando, finche' la centrale non segnala tempo di uscita o fine
+# inserimento, l'area resta in `arming`.
+ARM_SETTLE = 10.0  # secondi
+_ARMED_STATES = {"armed_away", "armed_home", "armed_night"}
+
 
 class VedoCoordinator(DataUpdateCoordinator):
     """Legge stato aree e zone dalla centrale (connessione persistente) e cachea i nomi."""
@@ -42,6 +52,7 @@ class VedoCoordinator(DataUpdateCoordinator):
         self.num_areas = 0
         self._client: Vedo | None = None
         self._session: bytes | None = None
+        self._arm_sent: dict[int, float] = {}   # area -> istante del comando di inserimento
         super().__init__(
             hass,
             _LOGGER,
@@ -99,10 +110,31 @@ class VedoCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         try:
-            return await self.hass.async_add_executor_job(self._fetch)
+            data = await self.hass.async_add_executor_job(self._fetch)
         except (VedoError, OSError) as err:
             await self.hass.async_add_executor_job(self._reset)
             raise UpdateFailed(f"Errore leggendo la centrale VEDO: {err}") from err
+        return self._settle_arming(data)
+
+    def _settle_arming(self, data: dict) -> dict:
+        """Mostra `arming` nel transitorio tra comando di inserimento e tempo di uscita."""
+        now = time.monotonic()
+        for idx, since in list(self._arm_sent.items()):
+            area = data["areas"].get(idx)
+            if area is None or now - since > ARM_SETTLE:
+                del self._arm_sent[idx]
+                continue
+            flags = area["flags"]
+            if area["state"] in _ARMED_STATES and not (
+                {"arming_completed", "arming_failed"} & set(flags)
+            ):
+                data["areas"][idx] = {**area, "state": "arming", "arming": True}
+            elif area["state"] != "disarmed":
+                # tempo di uscita, fine inserimento, allarme o pre-allarme: da qui
+                # in poi lo stato della centrale e' affidabile. Se e' ancora
+                # disinserita il comando non e' stato ancora applicato: si attende.
+                del self._arm_sent[idx]
+        return data
 
     async def async_shutdown(self) -> None:
         await self.hass.async_add_executor_job(self._reset)
@@ -116,9 +148,18 @@ class VedoCoordinator(DataUpdateCoordinator):
             return v.area_action(s, idx, code, num)
 
     async def async_arm(self, idx: int, code: int = ACT_ARM) -> None:
-        await self._run_action(idx, code, "arma")
+        area = (self.data or {}).get("areas", {}).get(idx)
+        if area is None or area["state"] not in _ARMED_STATES:
+            # gia' inserita: nessun transitorio da nascondere
+            self._arm_sent[idx] = time.monotonic()
+        try:
+            await self._run_action(idx, code, "arma")
+        except UpdateFailed:
+            self._arm_sent.pop(idx, None)
+            raise
 
     async def async_disarm(self, idx: int) -> None:
+        self._arm_sent.pop(idx, None)
         await self._run_action(idx, ACT_DISARM, "disarma")
 
     async def _run_action(self, idx: int, code: int, verb: str) -> None:

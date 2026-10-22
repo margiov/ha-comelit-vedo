@@ -69,7 +69,11 @@ e riaggiungere l'integrazione.
   cattura, P1/P2 non ancora verificati su campo).
 - Lo stato riflette tutte le condizioni della centrale: `disarmed`, `arming` (tempo
   di uscita), `armed_away`/`armed_home`/`armed_night`, `pending` (tempo di ingresso),
-  `triggered`. Gli attributi riportano `alarm_memory`, `not_ready`, `sabotage`,
+  `triggered`. Subito dopo un comando di inserimento la centrale segnala l'area come
+  inserita prima del tempo di uscita: per evitare il passaggio
+  `armed_away` → `arming` → `armed_away`, per qualche secondo dopo il comando l'area
+  resta `arming` finché la centrale non segnala tempo di uscita o fine inserimento.
+  Gli attributi riportano `alarm_memory`, `not_ready`, `sabotage`,
   `anomaly`, `exclusion`, `open_zone`, `output_on`.
 - Lo stato zone copre le prime 30 posizioni zona.
 - TLS cifra il trasporto ma non aggiunge autenticazione.
